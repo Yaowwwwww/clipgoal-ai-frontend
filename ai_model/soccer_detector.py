@@ -459,17 +459,17 @@ class SoccerDetector:
                     detections.append(detection)
                     
                     # 检测运动球类，适配iOS视频中的小足球
-                    if class_id == 32 and conf > 0.25:  # 降低置信度要求
+                    if class_id == 32 and conf > 0.15:  # 进一步降低置信度要求
                         # 验证边界框的合理性
                         box_width = x2 - x1
                         box_height = y2 - y1
                         aspect_ratio = box_width / box_height
                         box_area = box_width * box_height
                         
-                        # 放宽足球检测条件以适配iOS视频和大足球
-                        if (0.5 < aspect_ratio < 2.5 and      # 放宽宽高比要求
-                            300 < box_area < 50000 and        # 适配小到大足球面积
-                            box_width > 15 and box_height > 15):  # 降低最小尺寸
+                        # 进一步放宽足球检测条件
+                        if (0.3 < aspect_ratio < 3.0 and      # 更宽松的宽高比要求
+                            100 < box_area < 100000 and       # 更大的面积范围
+                            box_width > 10 and box_height > 10):  # 更小的最小尺寸
                             soccer_balls.append(detection)
         
         return {
