@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>网络连接测试 - ClipGoal-AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .warning { background-color: #fff3cd; color: #856404; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover { background-color: #0056b3; }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            background-color: #f8f9fa;
+        }
+        .ip-info {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: monospace;
+        }
+        .qr-code {
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 ClipGoal-AI 网络连接测试</h1>
+        
+        <div class="ip-info">
+            <h3>📱 手机访问地址</h3>
+            <p><strong>HTTP:</strong> http://192.168.0.103:8000</p>
+            <p><strong>WebSocket:</strong> ws://192.168.0.103:8000/ws</p>
+            <p><small>请确保手机和电脑在同一WiFi网络下</small></p>
+        </div>
+
+        <div id="networkInfo" class="status info">
+            正在检测网络状态...
+        </div>
+
+        <button onclick="testHealth()">🏥 测试健康检查</button>
+        <button onclick="testWebSocket()">🔌 测试WebSocket</button>
+        <button onclick="checkNetworkInfo()">📡 检查网络信息</button>
+        <button onclick="generateQR()">📱 生成二维码</button>
+
+        <div id="testResults"></div>
+
+        <div class="qr-code" id="qrCode" style="display: none;">
+            <h3>📱 扫描二维码访问</h3>
+            <p>用手机浏览器扫描下面的二维码访问测试页面</p>
+            <div id="qrCodeImage"></div>
+        </div>
+
+        <h3>🔧 手机测试步骤</h3>
+        <ol>
+            <li>确保手机和电脑连接到同一个WiFi网络</li>
+            <li>在手机浏览器中打开: <strong>http://192.168.0.103:8000/health</strong></li>
+            <li>如果看到 {"status":"healthy"...} 说明网络连接正常</li>
+            <li>然后在React Native应用中测试WebSocket连接</li>
+        </ol>
+
+        <h3>🐛 常见问题解决</h3>
+        <ul>
+            <li><strong>连接被拒绝:</strong> 检查防火墙设置，确保8000端口开放</li>
+            <li><strong>超时:</strong> 确保电脑和手机在同一WiFi下</li>
+            <li><strong>域名错误:</strong> 使用IP地址而不是localhost</li>
+        </ul>
+    </div>
+
+    <script>
+        let ws = null;
+
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const resultElement = document.createElement('div');
+            resultElement.className = 'test-result';
+            resultElement.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            resultsDiv.appendChild(resultElement);
+        }
+
+        function updateNetworkStatus(message, type) {
+            const networkInfo = document.getElementById('networkInfo');
+            networkInfo.textContent = message;
+            networkInfo.className = `status ${type}`;
+        }
+
+        async function testHealth() {
+            try {
+                addResult('🏥 正在测试健康检查...');
+                const response = await fetch('http://192.168.0.103:8000/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ 健康检查成功: ${JSON.stringify(data)}`, 'success');
+                    updateNetworkStatus('✅ HTTP连接正常', 'success');
+                } else {
+                    addResult(`❌ 健康检查失败: ${response.status}`, 'error');
+                    updateNetworkStatus('❌ HTTP连接失败', 'error');
+                }
+            } catch (error) {
+                addResult(`❌ 健康检查错误: ${error.message}`, 'error');
+                updateNetworkStatus('❌ 无法连接到服务器', 'error');
+            }
+        }
+
+        function testWebSocket() {
+            try {
+                addResult('🔌 正在测试WebSocket连接...');
+                ws = new WebSocket('ws://192.168.0.103:8000/ws');
+                
+                ws.onopen = function() {
+                    addResult('✅ WebSocket连接成功');
+                    updateNetworkStatus('✅ WebSocket连接正常', 'success');
+                    
+                    // 发送测试数据
+                    const testData = {
+                        image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+                    };
+                    ws.send(JSON.stringify(testData));
+                    addResult('📤 发送测试帧数据');
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        addResult(`📥 收到响应: ${JSON.stringify(data)}`);
+                    } catch (error) {
+                        addResult(`❌ 解析响应失败: ${error.message}`);
+                    }
+                };
+                
+                ws.onerror = function(error) {
+                    addResult(`❌ WebSocket错误: ${error}`);
+                    updateNetworkStatus('❌ WebSocket连接失败', 'error');
+                };
+                
+                ws.onclose = function(event) {
+                    addResult(`🔌 WebSocket连接关闭: ${event.code}`);
+                    updateNetworkStatus('⚪ WebSocket已断开', 'warning');
+                };
+            } catch (error) {
+                addResult(`❌ WebSocket连接失败: ${error.message}`);
+                updateNetworkStatus('❌ WebSocket初始化失败', 'error');
+            }
+        }
+
+        function checkNetworkInfo() {
+            addResult('📡 检查网络信息...');
+            addResult(`🌐 用户代理: ${navigator.userAgent}`);
+            addResult(`📍 当前地址: ${window.location.href}`);
+            addResult(`🔗 协议: ${window.location.protocol}`);
+            
+            if (navigator.connection) {
+                addResult(`📶 网络类型: ${navigator.connection.effectiveType || 'unknown'}`);
+            }
+        }
+
+        function generateQR() {
+            const qrDiv = document.getElementById('qrCode');
+            const qrImageDiv = document.getElementById('qrCodeImage');
+            const url = window.location.href;
+            
+            // 使用在线QR码生成服务
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+            qrImageDiv.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="border: 1px solid #ccc;">`;
+            qrDiv.style.display = 'block';
+            
+            addResult('📱 二维码已生成');
+        }
+
+        // 页面加载时自动检查
+        window.addEventListener('load', function() {
+            checkNetworkInfo();
+            setTimeout(testHealth, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -29,7 +29,6 @@ ClipGoal-AI 前端移动应用 - React Native + Expo实现的实时足球检测�
 
 ### 安装依赖
 ```bash
-cd frontend
 npm install
 ```
 
